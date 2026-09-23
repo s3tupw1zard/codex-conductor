@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "hooks" / "conductor.py"
+HOOKS_PATH = Path(__file__).resolve().parents[1] / "hooks" / "hooks.json"
 spec = importlib.util.spec_from_file_location("conductor", MODULE_PATH)
 assert spec and spec.loader
 conductor = importlib.util.module_from_spec(spec)
@@ -37,6 +38,20 @@ class ConductorTests(unittest.TestCase):
     def test_trivial_prompts_do_not_auto_initialize(self) -> None:
         self.assertTrue(conductor.is_trivial_prompt("Danke"))
         self.assertFalse(conductor.is_trivial_prompt("Implementiere eine kleine CLI"))
+
+    def test_prompt_submit_auto_initializes_meaningful_git_project(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            out = io.StringIO()
+            with (
+                mock.patch.object(conductor, "project_root", return_value=root),
+                mock.patch.object(conductor, "git_root", return_value=root),
+                redirect_stdout(out),
+            ):
+                conductor.handle_prompt_submit({"cwd": str(root), "prompt": "Implementiere eine kleine CLI"})
+            self.assertTrue((root / ".conductor" / "project.json").is_file())
+            payload = json.loads(out.getvalue())
+            self.assertIn("Initialized minimal .conductor project state automatically.", payload.get("systemMessage", ""))
 
     def test_project_snapshot_summarizes_tasks_and_blocking_decisions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -103,6 +118,21 @@ class ConductorTests(unittest.TestCase):
                 current = conductor.read_runtime("session")
                 self.assertEqual(current["state"], "active")
                 self.assertEqual(current["agent_id"], "agent-1")
+
+    def test_every_command_hook_has_windows_override(self) -> None:
+        hooks = json.loads(HOOKS_PATH.read_text(encoding="utf-8"))["hooks"]
+        commands = [
+            handler
+            for groups in hooks.values()
+            for group in groups
+            for handler in group.get("hooks", [])
+            if handler.get("type") == "command"
+        ]
+        self.assertGreater(len(commands), 0)
+        for handler in commands:
+            self.assertIn("commandWindows", handler)
+            self.assertIn("python", handler["commandWindows"].lower())
+            self.assertIn("%PLUGIN_ROOT%", handler["commandWindows"])
 
 
 if __name__ == "__main__":
