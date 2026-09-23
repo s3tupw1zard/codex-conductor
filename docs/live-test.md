@@ -2,18 +2,32 @@
 
 This checklist validates the behavior that matters before Codex Conductor can be treated as a usable v0.1 runtime.
 
-## Refresh an installed development build
+## Install / refresh the development build
 
-When testing the development branch after changes:
+Codex Conductor is distributed through the `s3tupw1zard` marketplace in [`s3tupw1zard/codex-plugins`](https://github.com/s3tupw1zard/codex-plugins).
+
+Add the marketplace once:
 
 ```bash
-codex plugin marketplace upgrade codex-conductor
-codex plugin add codex-conductor@codex-conductor
+codex plugin marketplace add s3tupw1zard/codex-plugins
+```
+
+Install Conductor:
+
+```bash
+codex plugin add codex-conductor@s3tupw1zard
+```
+
+After development updates:
+
+```bash
+codex plugin marketplace upgrade s3tupw1zard
+codex plugin add codex-conductor@s3tupw1zard
 ```
 
 Restart Codex after reinstalling so `SessionStart` and the refreshed hook bundle are loaded.
 
-The current development build is `0.1.3`.
+The current development build is `0.1.3`. While PR #1 is still open, the central marketplace points at `feat/initial-conductor-runtime`; after merge it should point at `main`.
 
 ## Enable native interactive input in Default mode
 
