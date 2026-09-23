@@ -46,6 +46,8 @@ For a blocking decision:
 
 If `request_user_input` is genuinely unavailable in the active host/mode, Conductor falls back to a normal root-session question and must end the turn while waiting. The fallback is intentionally non-interactive; it must never be used merely because the model chose not to call an available `request_user_input` tool.
 
+The plugin also injects a dedicated `UserPromptSubmit` policy hook whose only purpose is to reinforce this rule separately from the broader Conductor orchestration policy.
+
 ## Desired layout
 
 With two substantive decisions, Conductor should aim for three tabs/questions:
