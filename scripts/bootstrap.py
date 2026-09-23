@@ -37,9 +37,11 @@ def main() -> int:
             "schema_version": 1,
             "name": args.name,
             "kind": args.kind,
+            "profile_state": "incomplete",
             "technologies": [],
             "frameworks": [],
             "constraints": [],
+            "initialized_by": "manual-bootstrap",
             "created_at": timestamp,
             "updated_at": timestamp,
         },
@@ -48,7 +50,7 @@ def main() -> int:
         state_dir / "state.json",
         {
             "schema_version": 1,
-            "phase": "setup",
+            "phase": "discovery",
             "current_task_id": None,
             "last_completed_task_id": None,
             "selection_gate": None,
@@ -62,10 +64,15 @@ def main() -> int:
         {
             "schema_version": 1,
             "routing": {
-                "root_model_hint": "gpt-5.6-luna",
+                "root_model_hint": "gpt-6-luna",
                 "worker_medium_model": "gpt-5.6-terra",
                 "worker_complex_model": "gpt-5.6-sol",
                 "max_active_workers": 1,
+            },
+            "decisions": {
+                "blocking_input_mode": "sync",
+                "max_substantive_questions_per_batch": 2,
+                "include_additional_context_tab": True,
             },
         },
     )
