@@ -46,6 +46,17 @@
             "statusMessage": "Checking Codex Conductor gate and worker slot"
           }
         ]
+      },
+      {
+        "matcher": "^(request_user_input|request_user_input_async)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/user_input_guard.py",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\user_input_guard.py\"",
+            "statusMessage": "Routing Codex Conductor user questions to root session"
+          }
+        ]
       }
     ],
     "SubagentStart": [
