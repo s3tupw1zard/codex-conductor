@@ -1,5 +1,5 @@
 {
-  "description": "Codex Conductor project-state and single-worker orchestration hooks.",
+  "description": "Codex Conductor project-state, blocking-decision, and single-worker orchestration hooks.",
   "hooks": {
     "SessionStart": [
       {
@@ -9,7 +9,7 @@
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py session-start",
             "statusMessage": "Loading Codex Conductor project state",
-            "additionalContextLimit": 7000
+            "additionalContextLimit": 9000
           }
         ]
       }
@@ -21,19 +21,19 @@
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py prompt-submit",
             "statusMessage": "Syncing Codex Conductor task context",
-            "additionalContextLimit": 7000
+            "additionalContextLimit": 9000
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "^(spawn_agent|followup_task|Agent)$",
+        "matcher": "^(spawn_agent|followup_task|Agent|request_user_input_async)$",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py pre-agent",
-            "statusMessage": "Checking Codex Conductor worker slot"
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py pre-tool",
+            "statusMessage": "Checking Codex Conductor gate and worker slot"
           }
         ]
       }
@@ -45,7 +45,7 @@
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-start",
             "statusMessage": "Applying Codex Conductor worker policy",
-            "additionalContextLimit": 5000
+            "additionalContextLimit": 6000
           }
         ]
       }
@@ -57,7 +57,7 @@
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-stop",
             "statusMessage": "Returning worker result to Codex Conductor",
-            "additionalContextLimit": 4000
+            "additionalContextLimit": 5000
           }
         ]
       }
@@ -67,7 +67,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py stop"
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py stop",
+            "statusMessage": "Checking Codex Conductor decision gates"
           }
         ]
       }
