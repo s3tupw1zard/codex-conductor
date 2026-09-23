@@ -53,6 +53,8 @@ codex-conductor/
 └── tests/
 ```
 
+The plugin is published through the separate [`s3tupw1zard/codex-plugins`](https://github.com/s3tupw1zard/codex-plugins) marketplace rather than carrying its own marketplace definition.
+
 ## Lifecycle behavior
 
 - `SessionStart` injects a compact persistent project snapshot.
@@ -101,7 +103,7 @@ For native questions, Conductor aims for at most two substantive questions plus 
 
 Workers never own user interaction.
 
-If a worker needs user input, it must return a structured handoff containing `CONDUCTOR_USER_QUESTION`. Conductor now has a dedicated `PreToolUse` guard for `request_user_input` and `request_user_input_async`: Codex supplies `agent_id` / `agent_type` for subagent tool calls, and those calls are denied before the worker can open its own question surface.
+If a worker needs user input, it must return a structured handoff containing `CONDUCTOR_USER_QUESTION`. Conductor has a dedicated `PreToolUse` guard for `request_user_input` and `request_user_input_async`: Codex supplies `agent_id` / `agent_type` for subagent tool calls, and those calls are denied before the worker can open its own question surface.
 
 The root session then:
 
@@ -112,21 +114,32 @@ The root session then:
 
 The user should not need to reveal or switch into a worker thread to answer a question.
 
-## Local development / installation
+## Installation
+
+Codex Conductor is distributed through the **`s3tupw1zard`** marketplace.
+
+Add the marketplace once:
 
 ```bash
-codex plugin marketplace add s3tupw1zard/codex-conductor --ref feat/initial-conductor-runtime
-codex plugin add codex-conductor@codex-conductor
+codex plugin marketplace add s3tupw1zard/codex-plugins
 ```
 
-After updates:
+Then install Conductor:
 
 ```bash
-codex plugin marketplace upgrade codex-conductor
-codex plugin add codex-conductor@codex-conductor
+codex plugin add codex-conductor@s3tupw1zard
+```
+
+After marketplace/plugin updates:
+
+```bash
+codex plugin marketplace upgrade s3tupw1zard
+codex plugin add codex-conductor@s3tupw1zard
 ```
 
 Restart Codex after refreshing the plugin.
+
+During the initial live-test phase, the marketplace entry points at this repository's `feat/initial-conductor-runtime` branch. It will move to `main` after the initial runtime PR is merged.
 
 ## Tests
 
