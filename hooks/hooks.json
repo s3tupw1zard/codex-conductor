@@ -1,0 +1,76 @@
+{
+  "description": "Codex Conductor project-state and single-worker orchestration hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py session-start",
+            "statusMessage": "Loading Codex Conductor project state",
+            "additionalContextLimit": 7000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py prompt-submit",
+            "statusMessage": "Syncing Codex Conductor task context",
+            "additionalContextLimit": 7000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|followup_task|Agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py pre-agent",
+            "statusMessage": "Checking Codex Conductor worker slot"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-start",
+            "statusMessage": "Applying Codex Conductor worker policy",
+            "additionalContextLimit": 5000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-stop",
+            "statusMessage": "Returning worker result to Codex Conductor",
+            "additionalContextLimit": 4000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py stop"
+          }
+        ]
+      }
+    ]
+  }
+}
