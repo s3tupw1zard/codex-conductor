@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-conductor",
   "version": "0.1.2",
-  "description": "Persistent task orchestration for Codex projects with automatic project state, blocking decision gates, dependency-aware tasks, and at most one worker subagent at a time.",
+  "description": "Persistent task orchestration for Codex projects with automatic project state, native blocking decision gates when Codex exposes request_user_input, dependency-aware tasks, and at most one worker subagent at a time.",
   "repository": "https://github.com/s3tupw1zard/codex-conductor",
   "keywords": [
     "codex",
