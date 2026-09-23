@@ -27,6 +27,34 @@ Conductor's default policy is:
 
 The plugin injects this routing policy as context. It does **not** claim to override a host that does not expose per-worker model selection.
 
+## Required Codex feature for interactive decisions
+
+Conductor's blocking decision flow uses Codex's synchronous `request_user_input` tool to render an interactive selection UI and wait for the answer.
+
+In the normal **Default** Codex collaboration mode, current Codex builds require the following feature flag:
+
+```toml
+[features]
+plugins = true
+default_mode_request_user_input = true
+```
+
+Restart Codex after changing `~/.codex/config.toml` (or `$CODEX_HOME/config.toml`). Without this host feature, Conductor can still stop and wait, but Codex can only fall back to a plain-text question instead of the native interactive menu.
+
+You can verify the prerequisite with:
+
+```bash
+python scripts/doctor.py
+```
+
+On Windows:
+
+```powershell
+python .\scripts\doctor.py
+```
+
+See [`docs/interactive-input.md`](docs/interactive-input.md) for details.
+
 ## Current plugin structure
 
 ```text
@@ -36,8 +64,11 @@ codex-conductor/
 │   ├── hooks.json
 │   └── conductor.py
 ├── scripts/
-│   └── bootstrap.py
+│   ├── bootstrap.py
+│   └── doctor.py
 ├── docs/
+│   ├── interactive-input.md
+│   ├── live-test.md
 │   └── state-schema.md
 ├── tests/
 │   └── test_conductor.py
@@ -101,6 +132,8 @@ continue work
 
 `request_user_input_async` is deliberately denied inside tracked Conductor projects so Codex cannot ask a blocking question and continue implementation at the same time.
 
+When `request_user_input` is available, Conductor expects Codex to invoke the tool rather than printing equivalent options as ordinary assistant text.
+
 ### Question layout
 
 For interactive blocking questions, the policy is:
@@ -111,7 +144,7 @@ For interactive blocking questions, the policy is:
 - Codex's built-in free-form `Other` field remains available;
 - when possible, the **third tab is reserved for additional context** so the user can add details that were not covered by the choices.
 
-If synchronous `request_user_input` is unavailable, the root session asks in normal chat, marks the decision `waiting_for_user_external`, ends the turn, and waits. Dependent work must still not continue.
+If synchronous `request_user_input` is genuinely unavailable, the root session asks in normal chat, marks the decision `waiting_for_user_external`, ends the turn, and waits. Dependent work must still not continue.
 
 ## Worker question handoff
 
@@ -196,10 +229,11 @@ This separation keeps Conductor passive: normal prompts and explicit skill comma
 
 ## Development status
 
-`0.1.0` is still a live-test scaffold. Before treating it as stable, it needs real Codex validation for:
+`0.1.2` is still a live-test scaffold. Before treating it as stable, it needs real Codex validation for:
 
 - automatic `.conductor/` creation on Windows and Linux,
-- synchronous `request_user_input` blocking behavior,
+- native `request_user_input` menus in normal Default mode with the feature flag enabled,
+- synchronous blocking behavior,
 - the additional-context tab UX,
 - exact agent-tool matcher behavior,
 - explicit per-worker model selection,
