@@ -32,13 +32,23 @@ python .\scripts\doctor.py
 
 Codex also exposes `request_user_input` in collaboration modes that inherently allow it, including Plan mode. Conductor does not require Plan mode when `default_mode_request_user_input = true` is enabled.
 
+## Root-session ownership
+
+Only the root Codex session is allowed to call `request_user_input` or `request_user_input_async`.
+
+Codex includes `agent_id` and `agent_type` in `PreToolUse` hook input for thread-spawned subagents. Conductor uses those fields to deny user-input tool calls originating from a worker.
+
+If a worker needs user input, it must stop at a safe boundary and return a structured handoff containing `CONDUCTOR_USER_QUESTION`. The root session then persists the decision, opens the native interactive UI, collects the answer, and resumes the same worker with `followup_task` when retaining its context is useful.
+
+This prevents worker-owned questions from appearing on a hidden/inactive agent surface that the user must manually reveal.
+
 ## Conductor behavior
 
 For a blocking decision:
 
 1. Persist the decision in `.conductor/decisions.json`.
 2. Mark dependent work as `waiting_for_user` or `blocked`.
-3. If the `request_user_input` tool is available, **invoke that tool**. Do not print the same options as a normal assistant response instead.
+3. If the `request_user_input` tool is available, the **root session** invokes that tool. Do not print the same options as a normal assistant response instead.
 4. Ask at most two substantive questions per call and reserve a third question for additional context when useful.
 5. Each substantive question should contain 2-3 mutually exclusive options; put the recommended choice first.
 6. Do not add an explicit `Other` option. Codex adds the free-form Other path automatically.
@@ -46,7 +56,7 @@ For a blocking decision:
 
 If `request_user_input` is genuinely unavailable in the active host/mode, Conductor falls back to a normal root-session question and must end the turn while waiting. The fallback is intentionally non-interactive; it must never be used merely because the model chose not to call an available `request_user_input` tool.
 
-The plugin also injects a dedicated `UserPromptSubmit` policy hook whose only purpose is to reinforce this rule separately from the broader Conductor orchestration policy.
+The plugin also injects a dedicated `UserPromptSubmit` policy hook whose purpose is to reinforce this rule separately from the broader Conductor orchestration policy.
 
 ## Desired layout
 
