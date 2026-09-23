@@ -24,6 +24,13 @@
             "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" prompt-submit",
             "statusMessage": "Syncing Codex Conductor task context",
             "additionalContextLimit": 9000
+          },
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/decision_ui_policy.py",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\decision_ui_policy.py\"",
+            "statusMessage": "Applying Codex Conductor interactive decision policy",
+            "additionalContextLimit": 3000
           }
         ]
       }
