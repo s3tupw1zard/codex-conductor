@@ -1,14 +1,15 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-conductor",
-  "version": "0.1.0",
-  "description": "Persistent task orchestration for Codex projects with lightweight root sessions, dependency-aware task state, and at most one worker subagent at a time.",
+  "version": "0.1.3",
+  "description": "Persistent task orchestration for Codex projects with automatic project state, root-owned native blocking decision gates, dependency-aware tasks, and at most one worker subagent at a time.",
   "repository": "https://github.com/s3tupw1zard/codex-conductor",
   "keywords": [
     "codex",
     "task-management",
     "orchestration",
     "workflow",
+    "decision-gates",
     "subagent"
   ],
   "extensions": {
@@ -16,8 +17,8 @@
       "hooks": "./hooks/hooks.json",
       "interface": {
         "displayName": "Codex Conductor",
-        "shortDescription": "Persistent task orchestration for Codex projects",
-        "longDescription": "Keeps project state, task dependencies, resume context, and a single-worker handoff policy synchronized while you use normal Codex prompts and skills.",
+        "shortDescription": "Persistent task and decision orchestration for Codex projects",
+        "longDescription": "Keeps project state, task dependencies, blocking user decisions, resume context, and a single-worker handoff policy synchronized while you use normal Codex prompts and skills.",
         "developerName": "s3tupw1zard",
         "category": "Productivity",
         "capabilities": [

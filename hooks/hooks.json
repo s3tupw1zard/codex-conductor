@@ -1,0 +1,101 @@
+{
+  "description": "Codex Conductor project-state, blocking-decision, and single-worker orchestration hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py session-start",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" session-start",
+            "statusMessage": "Loading Codex Conductor project state",
+            "additionalContextLimit": 9000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py prompt-submit",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" prompt-submit",
+            "statusMessage": "Syncing Codex Conductor task context",
+            "additionalContextLimit": 9000
+          },
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/decision_ui_policy.py",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\decision_ui_policy.py\"",
+            "statusMessage": "Applying Codex Conductor interactive decision policy",
+            "additionalContextLimit": 3000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(spawn_agent|followup_task|Agent|request_user_input_async)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py pre-tool",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" pre-tool",
+            "statusMessage": "Checking Codex Conductor gate and worker slot"
+          }
+        ]
+      },
+      {
+        "matcher": "^(request_user_input|request_user_input_async)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/user_input_guard.py",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\user_input_guard.py\"",
+            "statusMessage": "Routing Codex Conductor user questions to root session"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-start",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" subagent-start",
+            "statusMessage": "Applying Codex Conductor worker policy",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-stop",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" subagent-stop",
+            "statusMessage": "Returning worker result to Codex Conductor",
+            "additionalContextLimit": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py stop",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" stop",
+            "statusMessage": "Checking Codex Conductor decision gates"
+          }
+        ]
+      }
+    ]
+  }
+}
