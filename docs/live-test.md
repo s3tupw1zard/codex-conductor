@@ -13,7 +13,7 @@ codex plugin add codex-conductor@codex-conductor
 
 Restart Codex after reinstalling so `SessionStart` and the refreshed hook bundle are loaded.
 
-The current development build is `0.1.2`.
+The current development build is `0.1.3`.
 
 ## Enable native interactive input in Default mode
 
@@ -44,13 +44,9 @@ Without this upstream Codex feature flag, Conductor can still pause and wait, bu
 - `command` using `python3` for Unix-like systems;
 - `commandWindows` using `python` and `%PLUGIN_ROOT%` for Windows.
 
-This is important because Windows installations commonly expose Python as `python` while Linux commonly exposes it as `python3`.
-
 ## Test 1 — automatic project state
 
-Use an empty Git repository and send a meaningful project prompt such as:
-
-> Erstelle eine kleine Python-CLI namens `task-notes`. Sie soll Notizen in einer lokalen JSON-Datei speichern. Benutzer sollen Notizen hinzufügen, auflisten, als erledigt markieren und löschen können. Nutze nur die Python-Standardbibliothek. Bevor du alles implementierst, strukturiere die Arbeit sinnvoll.
+Use an empty Git repository and send a meaningful project prompt.
 
 After the first prompt, verify that the repository contains:
 
@@ -65,22 +61,20 @@ After the first prompt, verify that the repository contains:
 
 A greeting or simple `Danke` must not initialize the directory.
 
-## Test 2 — blocking decision gate
+## Test 2 — root-owned blocking decision gate
 
-Use a prompt with a deliberately unresolved product decision:
-
-> Bei der Speicherung bin ich mir noch nicht sicher, ob erledigte Notizen dauerhaft gespeichert oder beim Beenden automatisch entfernt werden sollen. Triff diese Produktentscheidung nicht selbst. Sobald die Entscheidung für die weitere Arbeit nötig ist, frage mich und warte auf meine Antwort.
+Use a prompt with a deliberately unresolved product decision.
 
 Expected behavior:
 
 1. Conductor persists a blocking entry in `.conductor/decisions.json` before dependent implementation proceeds.
 2. The relevant task becomes `waiting_for_user` or dependent tasks become `blocked`.
-3. If `request_user_input` is available, Codex **invokes the tool** rather than printing equivalent options as normal assistant text.
+3. If `request_user_input` is available, the **root session** invokes the tool rather than printing equivalent options as normal assistant text.
 4. Codex uses synchronous `request_user_input` rather than `request_user_input_async`.
 5. The root session waits for the answer; dependent implementation does not continue in the background.
 6. After the answer, the decision becomes `resolved`, the answer is stored, and only satisfied tasks are unblocked.
 
-If Codex prints a numbered list of choices as ordinary assistant prose while the native `request_user_input` tool is available, treat the interaction test as failed.
+If Codex prints a numbered list of choices as ordinary assistant prose while the native tool is available, treat the interaction test as failed.
 
 ## Test 3 — question UX
 
@@ -90,10 +84,6 @@ For one or two substantive blocking questions, the interactive request should pr
 - the recommended option first with `(Recommended)` in its label;
 - the client's free-form `Other` input for a custom answer;
 - when possible, a final `Zusatz` / additional-context tab.
-
-The additional-context tab should offer `Keine weiteren Angaben (Recommended)` and allow the free-form field to contain anything else the user wants considered.
-
-Conductor intentionally limits one batch to at most two substantive questions so the third tab can be used for extra context.
 
 ## Test 4 — fallback when synchronous input is genuinely unavailable
 
@@ -105,20 +95,22 @@ If the current host/mode genuinely does not expose synchronous `request_user_inp
 4. wait for the next user message;
 5. not continue dependent work meanwhile.
 
-The fallback must not be chosen merely because the model preferred prose over an available native tool.
-
 ## Test 5 — worker handoff
 
-Use a bounded task complex enough to justify a worker.
+Use a bounded task complex enough to justify a worker and include a product decision that becomes relevant only after the worker has started.
 
 Expected behavior:
 
 - at most one worker is active;
 - the worker never spawns a child agent;
-- if it needs a user/product decision, it returns `CONDUCTOR_USER_QUESTION` and stops at a safe boundary;
-- the root converts the question into a blocking decision and asks the user through native `request_user_input` when available;
-- after resolution, the root prefers resuming the same worker with `followup_task` when retaining its context is useful;
-- the user never needs to switch into the worker conversation.
+- the worker is **not allowed to call `request_user_input` or `request_user_input_async`**;
+- if the worker attempts such a tool call, Conductor blocks it using the subagent `agent_id`/`agent_type` supplied by Codex;
+- the worker instead returns `CONDUCTOR_USER_QUESTION` and stops at a safe boundary;
+- the root converts the question into a blocking decision and opens native `request_user_input`;
+- the interactive question should appear directly on the root surface; the user should not need to reveal a worker view with Alt+Up;
+- after resolution, the root prefers resuming the same worker with `followup_task` when retaining its context is useful.
+
+Needing to switch/reveal a worker surface to answer the question is a failed handoff test.
 
 ## Test 6 — resume
 
