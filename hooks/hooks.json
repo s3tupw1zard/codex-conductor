@@ -8,6 +8,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py session-start",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" session-start",
             "statusMessage": "Loading Codex Conductor project state",
             "additionalContextLimit": 9000
           }
@@ -20,6 +21,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py prompt-submit",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" prompt-submit",
             "statusMessage": "Syncing Codex Conductor task context",
             "additionalContextLimit": 9000
           }
@@ -33,6 +35,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py pre-tool",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" pre-tool",
             "statusMessage": "Checking Codex Conductor gate and worker slot"
           }
         ]
@@ -44,6 +47,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-start",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" subagent-start",
             "statusMessage": "Applying Codex Conductor worker policy",
             "additionalContextLimit": 6000
           }
@@ -56,6 +60,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py subagent-stop",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" subagent-stop",
             "statusMessage": "Returning worker result to Codex Conductor",
             "additionalContextLimit": 5000
           }
@@ -68,6 +73,7 @@
           {
             "type": "command",
             "command": "python3 ${PLUGIN_ROOT}/hooks/conductor.py stop",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\hooks\\conductor.py\" stop",
             "statusMessage": "Checking Codex Conductor decision gates"
           }
         ]
