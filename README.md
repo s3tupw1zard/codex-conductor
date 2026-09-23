@@ -13,13 +13,14 @@ It is designed for a workflow where the **root Codex session remains the only co
 - Keep the root session lightweight and cost-efficient.
 - Allow one worker at a time for harder bounded work.
 - Route worker questions back to the root session instead of requiring the user to switch conversations.
+- Block dependent work when a product/user decision is unresolved.
 - Provide a stable state contract that reusable project skills can share.
 
 ## Runtime model
 
 Conductor's default policy is:
 
-- **Root session:** `gpt-5.6-luna` is the preferred cost-efficient baseline.
+- **Root session:** `gpt-6-luna` is the preferred lightweight baseline.
 - **Medium worker task:** prefer `gpt-5.6-terra` when a worker is justified.
 - **Complex/high-risk worker task:** prefer `gpt-5.6-sol`.
 - **Maximum active workers:** `1`.
@@ -49,15 +50,17 @@ codex-conductor/
 Conductor currently uses:
 
 - `SessionStart` — inject a compact persistent project snapshot.
-- `UserPromptSubmit` — remind the root session to classify and synchronize meaningful project work.
-- `PreToolUse` for agent tools — reserve the single worker slot and reject a second simultaneous worker.
+- `UserPromptSubmit` — automatically initialize minimal state for the first meaningful prompt in a Git repository, then synchronize task/decision context.
+- `PreToolUse` — reject `request_user_input_async` in tracked projects, block workers while decisions are unresolved, and enforce the single-worker slot.
 - `SubagentStart` — inject the worker contract and prohibit nested agents/project-state edits.
-- `SubagentStop` — route worker results or user questions back into the root flow.
-- `Stop` — currently non-blocking; reserved for later consistency checks.
+- `SubagentStop` — route worker results or user questions back into the root flow and preserve a waiting worker for later resume.
+- `Stop` — block the turn from finishing while an ordinary unresolved blocking decision still needs to be asked/resolved.
 
-## Project state
+## Automatic project initialization
 
-Projects use a `.conductor/` directory:
+You do not need to run a setup command just to start using Conductor.
+
+On the first meaningful prompt inside a Git repository, Conductor creates:
 
 ```text
 .conductor/
@@ -68,31 +71,90 @@ Projects use a `.conductor/` directory:
 └── config.json
 ```
 
+The initial project profile is intentionally minimal (`kind: generic`, `profile_state: incomplete`). A later `project-setup` skill can enrich it with language, framework, build system, supported versions, and other project-specific information.
+
+Simple conversation such as `Hallo`, `Danke`, or `OK` does not initialize project state.
+
+## Blocking decision gates
+
+Conductor treats product decisions, preferences, requirement gaps, approvals, and scope choices as **blocking decisions** when dependent work would otherwise require guessing.
+
+Expected flow:
+
+```text
+work reaches an unresolved choice
+        ↓
+record .conductor decision
+        ↓
+mark dependent task waiting_for_user / blocked
+        ↓
+request_user_input (synchronous)
+        ↓
+user answers in the root session
+        ↓
+persist answer + optional extra context
+        ↓
+unblock satisfied tasks
+        ↓
+continue work
+```
+
+`request_user_input_async` is deliberately denied inside tracked Conductor projects so Codex cannot ask a blocking question and continue implementation at the same time.
+
+### Question layout
+
+For interactive blocking questions, the policy is:
+
+- at most **two substantive questions** per `request_user_input` call;
+- **2-3 mutually exclusive options** per substantive question;
+- recommended choice first, labeled with `(Recommended)`;
+- Codex's built-in free-form `Other` field remains available;
+- when possible, the **third tab is reserved for additional context** so the user can add details that were not covered by the choices.
+
+If synchronous `request_user_input` is unavailable, the root session asks in normal chat, marks the decision `waiting_for_user_external`, ends the turn, and waits. Dependent work must still not continue.
+
+## Worker question handoff
+
+A worker must stop at a safe boundary when it needs a user decision and return `CONDUCTOR_USER_QUESTION` in its handoff.
+
+The root session then:
+
+1. creates/updates the blocking decision,
+2. asks the user synchronously,
+3. stores the answer,
+4. and resumes the same worker with `followup_task` when keeping its context is useful.
+
+The user should never need to switch into the worker conversation.
+
+## Project state
+
 See [`docs/state-schema.md`](docs/state-schema.md) for the v1 contract.
 
-The root session owns these files. Workers are instructed not to edit them.
+The root session owns `.conductor/`. Workers are instructed not to edit it.
 
-## Bootstrap a project manually
+## Manual bootstrap
 
-Until the planned `project-setup` skill exists, a state directory can be created manually:
+Automatic initialization is the normal path. The manual helper remains useful for tests or pre-creating a profile:
 
 ```bash
 python3 scripts/bootstrap.py --name GearMastery --kind minecraft-plugin
 ```
 
-The future setup skill will own richer technology/framework discovery and update these files instead of relying on this minimal bootstrap command.
-
 ## Local development / installation
 
 The repository includes a repo marketplace definition under `.agents/plugins/marketplace.json`.
 
-Add the marketplace:
+Add the marketplace from the current development branch:
 
 ```bash
-codex plugin marketplace add s3tupw1zard/codex-conductor
+codex plugin marketplace add s3tupw1zard/codex-conductor --ref feat/initial-conductor-runtime
 ```
 
-Then install/enable **Codex Conductor** from the Plugins Directory in a supported local ChatGPT/Codex client and review/trust its hooks.
+Then install:
+
+```bash
+codex plugin add codex-conductor@codex-conductor
+```
 
 Plugin hooks are not trusted automatically. Review `hooks/hooks.json` and `hooks/conductor.py` before approving them.
 
@@ -103,6 +165,17 @@ No third-party Python packages are required.
 ```bash
 python3 -m unittest discover -s tests -v
 ```
+
+Current unit coverage includes:
+
+- minimal state creation,
+- trivial-prompt handling,
+- project snapshots,
+- blocking decisions,
+- denial of asynchronous project questions,
+- Stop-hook blocking,
+- external wait fallback,
+- and the worker runtime lock.
 
 ## Planned companion skills
 
@@ -123,11 +196,14 @@ This separation keeps Conductor passive: normal prompts and explicit skill comma
 
 ## Development status
 
-`0.1.0` is the initial runtime scaffold. Before treating it as stable, it still needs live Codex testing for:
+`0.1.0` is still a live-test scaffold. Before treating it as stable, it needs real Codex validation for:
 
-- exact agent-tool matcher behavior across current Codex builds,
+- automatic `.conductor/` creation on Windows and Linux,
+- synchronous `request_user_input` blocking behavior,
+- the additional-context tab UX,
+- exact agent-tool matcher behavior,
 - explicit per-worker model selection,
 - worker resume via `followup_task`,
-- question handoff behavior,
+- worker-question handoff,
 - stale worker-lock recovery,
 - and ChatGPT Work/local-runtime differences for command hooks.
